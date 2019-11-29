@@ -2,7 +2,7 @@ const path = require("path");
 const glob = require("fast-glob");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const BundleAnalyzer = require("webpack-bundle-analyzer").BundleAnalyzerPlugin;
-const StatsWriter = require("webpack-stats-plugin").StatsWriterPlugin;
+const SiblingChunksOnlyPlugin = require("./SiblingChunksOnlyPlugin");
 
 /** @return {import('webpack').Configuration} */
 function configurator() {
@@ -53,7 +53,7 @@ function configurator() {
         filename: "palm-trees/index.html",
         chunks: "palm"
       }),
-      new MyPlugin()
+      new SiblingChunksOnlyPlugin()
     ],
     /* == ALIASES =========================================================== */
     resolve: {
@@ -72,42 +72,3 @@ function configurator() {
 }
 
 module.exports = configurator;
-
-// /**
-//  * @param {string[]} entries
-//  * @return {{ name: string, entryPath: string, templatePath: string, outputPath: string }[]}*/
-// function subApps(entries) {}
-
-function MyPlugin() {
-  MyPlugin.prototype.apply = apply;
-  /** @param {import("webpack").Compiler} compiler */
-  function apply(compiler) {
-    compiler.plugin("compilation", function(compilation) {
-      console.log(compilation.hooks);
-      compilation.plugin("html-webpack-plugin-alter-chunks", function(
-        chunks,
-        { plugin }
-      ) {
-        const includes = [].concat(plugin.options.chunks);
-        const byName = {};
-
-        for (let i = 0; i < includes.length; i++) {
-          const include = includes[i];
-          const chunk = chunks.find(c => c.names.find(n => n === include));
-          if (!chunk) continue;
-
-          byName[include] = chunk;
-          if (chunk.siblings.length > 0)
-            chunk.siblings.forEach(i => {
-              const chunk = chunks[i];
-              return (byName[chunk.names[0]] = chunk);
-            });
-        }
-
-        return Object.values(byName);
-      });
-    });
-  }
-
-  return;
-}
